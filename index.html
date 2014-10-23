@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <script src="https://code.jquery.com/jquery-2.1.1.min.js"></script>
+    <script src="https://js.braintreegateway.com/v2/braintree.js"></script>
+  </head>
+  <body>
+
+<h1>Braintree Test</h1>
+
+<form class="js-template" method="post" action="" style="display:none;">
+  <div class="js-container"></div>
+  <button type="submit" class="js-submit">SUBMIT</button>
+</form>
+
+<br /><br />
+
+<button onclick="loadBraintree()">reload braintree.js</button>
+
+<div id="log"></div>
+
+<script>
+
+$(document).on('click', '.js-submit', function(event){
+  log('SUBMIT')
+})
+
+var nonceReceivedCallback = function(event, nonce){
+  var nonceJson = JSON.stringify(nonce)
+  console.log("NONCE: "+nonceJson)
+  if (nonceJson[0] !== '"') {
+    log('nonce received INVALID: '+nonceJson)
+  }
+  else {
+    log('nonce received (submit?)')
+  }
+  loadClientToken()
+}
+
+var loadClientToken = function(){
+  $.ajax({
+    type: "POST",
+    url: window.location.href,
+    dataType: "JSON",
+    success: function(data){
+      console.log("data: "+JSON.stringify(data))
+      setupBraintree(data.clientToken)
+    }
+  })
+}
+
+var setupBraintree = function(clientToken){
+  var $template = $('.js-template')
+  $template.siblings('form').remove()
+  var $form = $template.clone()
+  $form.removeClass('js-template')
+  $template.before($form)
+  $form.show()
+  braintree.setup(clientToken, "dropin", {
+    container: $form.find('.js-container')[0],
+    paymentMethodNonceReceived: nonceReceivedCallback,
+    paypal: { singleUse: true }
+  })
+}
+
+var loadBraintree = function(){
+  log('reload braintree')
+  $.getScript('https://js.braintreegateway.com/v2/braintree.js', function(){
+    console.log('braintree.js loaded.')
+  })
+}
+
+var log_i = 0
+var log = function(msg){
+  log_i++
+  $('#log').append('<div>'+log_i+': '+msg+'</div>')
+}
+
+loadClientToken()
+
+</script>
+
+  </body>
+</html>
